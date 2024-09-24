@@ -1,16 +1,14 @@
 ---
-title: "My title"
-subtitle: "My subtitle if needed"
+title: "An Analysis of TTC Streetcar Delay Times"
 author: 
-  - First author
-  - Another author
-thanks: "Code and data are available at: LINK."
-date: today
-date-format: long
-abstract: "First sentence. Second sentence. Third sentence. Fourth sentence."
+  - Daniel Du
+thanks: "Code and data are available at https://github.com/danield424/TTC-Streetcar-Delays"
+date: September 24, 2024
+abstract: "This paper analyzes TTC streetcar delay data to understand frequencies 
+and lengths of delays. Conclusions... Discussion point..."
 format: pdf
 number-sections: true
-bibliography: references.bib
+bibliography: references.bib #TODO
 ---
 
 ```{r}
@@ -19,136 +17,250 @@ bibliography: references.bib
 #| message: false
 
 library(tidyverse)
-library(palmerpenguins)
-```
+library(ggpubr)
+library(dplyr)
+library(lubridate)
+library(gridExtra)
+library(patchwork)
 
+# You can and should cross-reference sections and sub-sections. We use @citeR and @rohan.
+```
 
 # Introduction
 
-You can and should cross-reference sections and sub-sections. We use @citeR and @rohan.
+One of the most important areas of any city's infrastructure is its public transportation system. Streetcars, once a common mode of transport in North America, <https://www.britannica.com/technology/streetcar>, dwindled in usage as cities became increasingly car-centric. Today, Toronto is the only city that still uses streetcars, with the TTC (Toronto Transit Commission) currently operating 11 day lines and 4 night lines. However, the streetcar system's inefficiency and delay frequency hinder its effectiveness and increase overall traffic. An improvement in this area would go a long way towards increasing the accessibility and sustainability of Canada's largest city.
 
-The remainder of this paper is structured as follows. @sec-data....
+The TTC streetcar system is relatively archaic and unreliable, which is a problem since 230,000 commuters rely on it daily <https://www.cp24.com/news/the-ttc-says-ridership-reached-a-post-pandemic-high-1.7041849> . Nearly every Torontonian has an anecdote about a lengthy streetcar delay inconveniencing them in a time of need, causing many to rely on alternative transit modes <https://www.thestar.com/opinion/contributors/queen-and-king-streetcars-show-toronto-why-the-subway-is-the-better-way-it-works/article_c8a54ecc-6d68-54f2-84fd-ccd5c41dd4ed.html>. Assessing the total impact and effect caused by streetcar delays should help give us a better idea of where and when its efficiencies are most pronounced.
 
-
+This paper examines streetcar delay data to determine the extent of streetcar delay issues. In @sec-data, we analyze public streetcar delay data from 2023 to look for trends and observations within delays. In @Discussion, we discuss our findings and their real-world relevance.
 
 # Data {#sec-data}
 
-Some of our data is of penguins (@fig-bills), from @palmerpenguins.
+Our data is sourced from the @opendatatoronto R package, which provides a spreadsheet of all streetcar delays in 2023. Data was cleaned using @citeR and packages @tidyverse, @dplyr, @lubridate, and @janitor. Data is analyzed with @ggplot2, @ggpubr, @gridExtra and @knitr. We filtered relevant variables for our analysis, which include day of week, date and time, the line number, line type, and delay time for each observation. We also removed extreme outlier delays, which were likely to be pre-planned and made clear to commuters ahead of time. In total, the cleaned data has 12396 observations.
+
+In @2.1 we explore the basics of the data before further analysis.
+
+## 2.1 Exploring Data {#2.1}
+
+Here is a sample of the data:
 
 ```{r}
-#| label: fig-bills
-#| fig-cap: Bills of penguins
+#| label: table-1
+#| fig-cap: 2023 Streetcar Delays
 #| echo: false
 
-ggplot(penguins, aes(x = island, fill = species)) +
-  geom_bar(alpha = 0.8) +
-  scale_fill_manual(values = c("darkorange","purple","cyan4"),
-                    guide = "none") +
-  theme_minimal() +
-  facet_wrap(~species, ncol = 1) +
-  coord_flip()
+cleaned_data <- read.csv("../data/analysis_data/delaydata.csv")
+
+table_plot <- ggtexttable(
+  head(cleaned_data, 15),
+  rows = NULL,             # Option to display row numbers
+  theme = ttheme("mBlue")  # Optional theme for styling
+)
+table_plot
 ```
 
-Talk more about it.
-
-And also planes (@fig-planes). (You can change the height and width, but don't worry about doing that until you have finished every other aspect of the paper - Quarto will try to make it look nice and the defaults usually work well once you have enough text.)
+To provide a bit more insight we can look into the summary statistics of delay times, and filter for type of service, line, and date. For example, we can see from @table-2 that average delay times are higher for the night service lines, and on Saturday compared to most other days of the week. Of course, this is very surface level and we analyze the data further in @2.2.
 
 ```{r}
-#| label: fig-planes
-#| fig-cap: Relationship between wing length and width
+#| label: table-2
+#| fig-cap: 2023 Streetcar Delays Summary
+#| echo: false
+
+print("Minutes Delay Summary Statistics")
+cleaned_data$min_delay %>% summary()
+
+print("Min Delay Summary Statistics (Night Service Lines)")
+regular_data <- cleaned_data %>% filter(service_type == 'Night')
+regular_data$min_delay %>% summary()
+print("Min Delay Summary Statistics (Saturday)")
+data506 <- cleaned_data %>% filter(day == "Saturday")
+data506$min_delay %>% summary()
+print("Min Delay Summary Statistics (Jan-Mar 2023)")
+date_data <- cleaned_data %>% filter(date <= as.Date("2023-04-01"))
+summary(date_data$min_delay)
+```
+
+## 2.2 Analysing Data {#2.2}
+
+```{r}
+#| label: 2.2.1
+#| fig-cap: average delay
 #| echo: false
 #| warning: false
 #| message: false
 
-analysis_data <- read_csv(here::here("data/analysis_data/analysis_data.csv"))
+# Calculate the average delay for each line 
+avg_delay_data <- cleaned_data %>%
+  group_by(line, service_type) %>%
+  summarize(avg_delay = mean(min_delay), .groups = 'drop')
 
-analysis_data |> 
-  ggplot(aes(x = width, y = length)) +
-  geom_point(alpha = 0.8) +
-  theme_minimal() +
-  labs(x = "Wing width (mm)",
-       y = "Wing length (mm)")
+# Reorder service_type to ensure "Regular" is first and "Night" is last
+avg_delay_data$service_type <- factor(avg_delay_data$service_type, levels = c("Regular", "Reduced", "Night"))
+
+# Bar graph
+ggplot(avg_delay_data, aes(x = as.factor(line), y = avg_delay, fill = service_type)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Average Delay Time for Streetcar Lines in 2023",
+    x = "Streetcar Line",
+    y = "Average Delay Time (mins)",
+  ) +
+  scale_fill_manual(values = c("Regular" = "red3", "Reduced" = "tomato", "Night" = "blue")) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+        strip.text = element_text(size = 10, face = "bold"),
+        legend.position = "none",
+  ) +
+  facet_grid(~ service_type, scales = "free_x", space = "free")
+
 ```
 
-Talk way more about it. 
-
-
-
-# Model
-
-The goal of our modelling strategy is twofold. Firstly,...
-
-Here we briefly describe the Bayesian analysis model used to investigate... Background details and diagnostics are included in [Appendix -@sec-model-details].
-
-## Model set-up
-
-Define $y_i$ as the number of seconds that the plane remained aloft. Then $\beta_i$ is the wing width and $\gamma_i$ is the wing length, both measured in millimeters.  
-
-\begin{align} 
-y_i|\mu_i, \sigma &\sim \mbox{Normal}(\mu_i, \sigma) \\
-\mu_i &= \alpha + \beta_i + \gamma_i\\
-\alpha &\sim \mbox{Normal}(0, 2.5) \\
-\beta &\sim \mbox{Normal}(0, 2.5) \\
-\gamma &\sim \mbox{Normal}(0, 2.5) \\
-\sigma &\sim \mbox{Exponential}(1)
-\end{align}
-
-We run the model in R [@citeR] using the `rstanarm` package of @rstanarm. We use the default priors from `rstanarm`.
-
-
-### Model justification
-
-We expect a positive relationship between the size of the wings and time spent aloft. In particular...
-
-We can use maths by including latex between dollar signs, for instance $\theta$.
-
-
-# Results
-
-Our results are summarized in @tbl-modelresults.
-
 ```{r}
+#| label: 2.2.2
+#| fig-cap: delay frequency
 #| echo: false
-#| eval: true
 #| warning: false
 #| message: false
 
-library(rstanarm)
+# Calculate the frequency of delays for each line and type
+delay_freq_data <- cleaned_data %>%
+  group_by(line, service_type) %>%
+  summarize(delay_freq = n(), .groups = 'drop')
+#todo: see if i can make this a function
+# Filter data for each service type 
+regular_data <- delay_freq_data %>% filter(service_type == "Regular")
+reduced_data <- delay_freq_data %>% filter(service_type == "Reduced")
+night_data <- delay_freq_data %>% filter(service_type == "Night")
 
-first_model <-
-  readRDS(file = here::here("models/first_model.rds"))
+# Create individual bar graphs for each service type
+plot1 <- ggplot(regular_data, aes(x = as.factor(line), y = delay_freq, fill = service_type)) +
+  geom_bar(stat = "identity", fill = "red3", width = 0.9) +
+  labs(
+    title = "Regular Service Delay Frequency",
+    x = "Streetcar Line",
+    y = "Number of Delays"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 13, face = "bold")
+  )
+
+plot2 <- ggplot(reduced_data, aes(x = as.factor(line), y = delay_freq, fill = service_type)) +
+  geom_bar(stat = "identity", fill = "tomato", width = 0.4) +
+  labs(
+    title = "Reduced Service Delay Frequency",
+    x = "Streetcar Line",
+    y = "Number of Delays"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 10, face = "bold")
+  )
+
+plot3 <- ggplot(night_data, aes(x = as.factor(line), y = delay_freq, fill = service_type)) +
+  geom_bar(stat = "identity", fill = "blue", width = 0.8) +
+  labs(
+    title = "Night Service Delay Frequency",
+    x = "Streetcar Line",
+    y = "Number of Delays"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 10, face = "bold")
+  )
+# Adjust widths to make plot1 bigger
+print(plot1 + (plot2 / plot3) + plot_layout(ncol = 2, widths = c(1.8, 1)))
 ```
 
-```{r}
-#| echo: false
-#| eval: true
-#| label: tbl-modelresults
-#| tbl-cap: "Explanatory models of flight time based on wing width and wing length"
-#| warning: false
+From @2.2.1 and @2.2.2, we can see the average delay time is greater for the reduced and night services compared to the regular. From the regular streetcars, the streetcar line with the highest average delay time is the 505, although there is very little variance between all 11 lines. There is a much greater variance in the delay frequency - the 501 and 301 (which run on the same line) have a much higher delay frequency than the rest of the lines.
 
-modelsummary::modelsummary(
-  list(
-    "First model" = first_model
-  ),
-  statistic = "mad",
-  fmt = 2
+```{r}
+# Extract hour and day of the week
+cleaned_data <- cleaned_data %>%
+  mutate(hour = hour(date),  # Extract the hour from datetime
+    day_of_week = wday(date, label = TRUE)  # Extract the day of the week as a label
+  )
+
+regular_data <- cleaned_data %>% filter(service_type == "Regular")
+reduced_data <- cleaned_data %>% filter(service_type == "Reduced")
+night_data <- cleaned_data %>% filter(service_type == "Night")
+
+# Function to create plots for day of week
+create_delay_plot <- function(data, colour) {
+  plot_day <- ggplot(data, aes(x = day_of_week, fill = service_type)) +
+    geom_bar(fill = colour) +
+    labs(title = "Delays by Day of Week",
+      x = "Day of Week",
+      y = "# of Delays"
+    ) +
+    theme(plot.title = element_text(hjust = 0.5, size = 11, face = "bold"),
+      axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+# Create plots for each service type
+regular_plot <- create_delay_plot(regular_data, "red3")
+reduced_plot <- create_delay_plot(reduced_data, "tomato")
+night_plot <- create_delay_plot(night_data, "blue")
+
+grid.arrange(
+  regular_plot,
+  reduced_plot,
+  night_plot,
+  ncol = 3
 )
 ```
 
+From \@ the graphs, we can see that delays are most common on Wednesday among all 3 streetcar services.
 
+```{r}
+regular_plot_hour <- ggplot(regular_data, aes(x = as.factor(hour), fill = service_type)) +
+  scale_x_discrete(drop = FALSE, limits = as.character(0:23)) + 
+  geom_bar(fill = "red3", width=0.95) +
+  labs(title = "Delays by Hour",
+    x = NULL,
+    y = "# of Delays"
+  ) +
+  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+        )
+reduced_plot_hour <- ggplot(reduced_data, aes(x = as.factor(hour), fill = service_type)) +
+  scale_x_discrete(drop = FALSE, limits = as.character(0:23)) + 
+  geom_bar(fill = "tomato", width=0.95) +
+  labs(title = NULL,
+    x = NULL,
+    y = "# of Delays"
+  ) 
+night_plot_hour <- ggplot(night_data, aes(x = as.factor(hour), fill = service_type)) +
+  scale_x_discrete(drop = FALSE, limits = as.character(0:23)) + 
+  geom_bar(fill = "blue", width=0.95) +
+  labs(title = NULL,
+    x = "Hour",
+    y = "# of Delays"
+  )
 
+grid.arrange(regular_plot_hour, reduced_plot_hour, night_plot_hour, ncol = 1)
+```
+
+From \@ the graph, we can see that the regular streetcar service has delays around 3-4 pm, although the distribution of delays is fairly uniform (with the exception of early morning hours when there is less service).
 
 # Discussion
 
-## First discussion point {#sec-first-point}
+## First discussion point
 
-If my paper were 10 pages, then should be be at least 2.5 pages. The discussion is a chance to show off what you know and what you learnt from all this. 
+Looking at the average delay lengths, it is somewhat surprising that night service streetcars experience significant delays compared to the regular service, as one would expect less traffic to result in smoother operations. Possible reasons for this include a drop in operational support for drivers during night hours, as there are fewer staff available to manage and respond to issues and maintenance activities. Additionally, overnight road maintenance is often scheduled during these hours and may affect night service. Coupled with the reduced frequency of night service, the lengthy delays appear to be an area of concern, as passengers already have fewer options and longer wait times during the times when night service is operating. This pattern highlights the need for targeted strategies to address delays during night operations.
 
 ## Second discussion point
 
+Looking at the delay frequency by line, the frequency of delays along the 501 and 301 that operate along Queen St are by far the highest compared to their counterparts. While it is possible that its operations were less efficient due to rerouting, https://www.thestar.com/news/gta/queen-streetcar-is-about-to-be-rerouted-for-more-than-four-years-here-s-where/article_d61f5cf0-1380-50cb-b73d-33283035943e.html this does not fully account for the sheer amount of delays. This shows the need either for increased service in this area, or better scheduling and planning to increase commuter's confidence in the 501 and 301 arrival time.
+
+todo: get comparison from 2024 data.
+
 ## Third discussion point
 
+Regular streetcar delays are most common around 3-4pm, which is outside of peak hours. The data seems to indicate that delays are less frequent before noon, which is a positive sign.
+
 ## Weaknesses and next steps
+
+Data does not include total trips, so it is difficult to determine if variance is due to delay variance or total trip amount variance.
 
 Weaknesses and next steps should also be included.
 
@@ -156,66 +268,10 @@ Weaknesses and next steps should also be included.
 
 \appendix
 
-# Appendix {-}
-
+# Appendix {.unnumbered}
 
 # Additional data details
 
-# Model details {#sec-model-details}
-
-## Posterior predictive check
-
-In @fig-ppcheckandposteriorvsprior-1 we implement a posterior predictive check. This shows...
-
-In @fig-ppcheckandposteriorvsprior-2 we compare the posterior with the prior. This shows... 
-
-```{r}
-#| eval: true
-#| echo: false
-#| message: false
-#| warning: false
-#| label: fig-ppcheckandposteriorvsprior
-#| layout-ncol: 2
-#| fig-cap: "Examining how the model fits, and is affected by, the data"
-#| fig-subcap: ["Posterior prediction check", "Comparing the posterior with the prior"]
-
-pp_check(first_model) +
-  theme_classic() +
-  theme(legend.position = "bottom")
-
-posterior_vs_prior(first_model) +
-  theme_minimal() +
-  scale_color_brewer(palette = "Set1") +
-  theme(legend.position = "bottom") +
-  coord_flip()
-```
-
-## Diagnostics
-
-@fig-stanareyouokay-1 is a trace plot. It shows... This suggests...
-
-@fig-stanareyouokay-2 is a Rhat plot. It shows... This suggests...
-
-```{r}
-#| echo: false
-#| eval: true
-#| message: false
-#| warning: false
-#| label: fig-stanareyouokay
-#| fig-cap: "Checking the convergence of the MCMC algorithm"
-#| fig-subcap: ["Trace plot", "Rhat plot"]
-#| layout-ncol: 2
-
-plot(first_model, "trace")
-
-plot(first_model, "rhat")
-```
-
-
-
 \newpage
 
-
 # References
-
-

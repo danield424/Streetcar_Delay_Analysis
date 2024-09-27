@@ -1,11 +1,11 @@
 ---
-title: "An Analysis of TTC Streetcar Delay Times"
+title: "Decoding Delays: Analyzing Toronto’s Streetcar System"
+subtitle: "Investigating Patterns and Trends in TTC Streetcar Delays (2022-2024)"
 author: 
   - Daniel Du
 thanks: "Code and data are available at https://github.com/danield424/TTC-Streetcar-Delays"
 date: September 24, 2024
-abstract: "This paper analyzes TTC streetcar delay data to understand frequencies 
-and lengths of delays. Conclusions... Discussion point..."
+abstract: "This paper analyzes delay data from Toronto's TTC streetcar system between 2022 and 2024 to assess patterns in delay frequency and length. The study found that while the frequency of delays has decreased, the average delay length has increased, with delays showing no consistent patterns based on month, day of the week, or hour. Understanding streetcar delay trends helps determine methods of improving public transportation in Toronto."
 format: pdf
 number-sections: true
 bibliography: references.bib
@@ -27,23 +27,21 @@ library(ggplot2)
 
 # Introduction
 
-Public transportation systems are vital components of urban infrastructure, providing essential services that connect people to their communities, reduce traffic congestion, and promote sustainability. Streetcars were once a common mode of transportation across North American cities, but have largely disappeared due to car-centric urban planning @britannica. Today, Toronto stands out as the only city on the continent still utilizing a streetcar network, with the Toronto Transit Commission (TTC) running 11 daytime and 5 nighttime lines. These streetcars are often criticized for being slow and unreliable, with frequent delays frustrating commuters while contributing to broader traffic congestion, undermining the positives of public transit @thestar. Addressing these inefficiencies could significantly improve accessibility, boost sustainability, and enhance the overall quality of life for in Canada’s largest city.
+  Public transportation systems are vital components of urban infrastructure, providing essential services that connect people to their communities, reduce traffic congestion, and promote sustainability. Streetcars were once a common mode of transportation across North American cities, but have largely disappeared due to car-centric urban planning @britannica. Today, Toronto stands out as the only city on the continent still utilizing a streetcar network, with the Toronto Transit Commission (TTC) running 11 daytime and 5 nighttime lines. These streetcars are often criticized for being slow and unreliable, with frequent delays frustrating commuters while contributing to broader traffic congestion, undermining the positives of public transit @thestar. Addressing these inefficiencies could significantly improve accessibility, boost sustainability, and enhance the overall quality of life for in Canada’s largest city.
 
-Despite the central role of the streetcar, which serves approximately 230,000 daily commuters, there is a lack of comprehensive analysis quantifying the impact of streetcar delays on transit efficiency @cp24. This paper explores the frequency, duration, and patterns of these disruptions and aims to provide empirical insights. Understanding where, when, and why these delays occur is crucial to identifying the areas most in need of improvement and optimizing this key component of Toronto’s public transportation system.
+  Despite the central role of the streetcar, which serves approximately 230,000 daily commuters, there is a lack of comprehensive analysis quantifying the impact of streetcar delays on transit efficiency @cp24. This paper explores the frequency, duration, and patterns of these disruptions and aims to highlight patterns. Understanding where, when, and why these delays occur is central to identifying the areas most in need of improvement and optimizing this key component of Toronto’s public transportation system.
 
-This paper aims to fill this gap by analyzing public streetcar delay data from 2022 to 2024 to assess the scope and impact of delays within the TTC network. The study examines delay patterns by time of day, day of the week, and month, comparing average delay times across different service lines and types. Key findings reveal significant variability in delay times, with certain lines and time periods showing pronounced inefficiencies. The results highlight critical areas for improvement, providing actionable insights for transit authorities. This analysis underscores the importance of data-driven strategies to enhance streetcar performance and supports broader efforts to improve urban mobility in Toronto.
+  This study analyzes public streetcar delay data from 2022 to 2024 to assess the extent and impact of delays in Toronto's streetcar network. After examining delay patterns across different years, months, days, and hours, and comparing average delay lengths and frequencies across various service lines, the analysis reveals a uniform consistent increase in average delay times, despite a reduction in delay frequency. These findings highlight systemic inefficiencies in the streetcar network, showing the need for further research and investment to improve transit performance. The findings from this study support movements to enhance the efficiency and reliability of Toronto’s public transportation system.
 
-The paper is structured as follows: @sec-data introduces the data and methodology used; @sec-results presents the key findings; and @sec-discussion discusses the real-world implications of these results.
+  The paper is structured as follows: @sec-data introduces the data and methodology used; @sec-results presents the key findings; and @sec-discussion discusses the real-world implications of these results. @sec-limitations discusses the limitations of the dataset and potential avenues for future research.
 
 # Data {#sec-data}
 
-To investigate streetcar delays, delay logs from 2022, 2023, and 2024 (up until September) is sourced from the @opendatatoronto R package, which provides data from the City of Toronto Open Data Catalogue. These datasets, intended to monitor and improve public transit performance, are regularly updated and were current as of September 1, 2024. Although similar datasets exist, this specific dataset was chosen due to its official nature, reliability, and size.
+  To investigate streetcar delays, delay logs from 2022, 2023, and 2024 (up until September) is sourced from the @opendatatoronto R package, which provides data from the City of Toronto Open Data Catalogue. These datasets, intended to monitor and improve public transit performance, are regularly updated and were current as of September 1, 2024. Although similar datasets exist, this specific dataset was chosen due to its official nature, reliability, and size.
 
-The data includes the date and time, line number, and delay length of over 40,000 instances of streetcar delays since 2022. It is unclear how the data was gathered; reliability is ensured as it comes directly from the TTC, but it is possible there were missed or incorrect measurements due to limitations. Delay times are measured in minutes, and time is measured to the second.
+  The data includes the date and time, line number, and delay length of over 40,000 instances of streetcar delays since 2022. It is unclear how the data was gathered; reliability is ensured as it comes directly from the TTC, but it is possible there were missed or incorrect measurements due to limitations. Delay times are measured in minutes, and time is measured to the second.
 
-The data was thoroughly cleaned to ensure accuracy and prepare it for analysis. This included constructing a variable to determine the type of service - regular, reduced, night - of each specific streetcar line, and filtering observations to only include streetcar lines currently in service @ttc. Additionally, delays under 2 minutes were removed and considered negligible, as were delays over 2 hours, as these were likely to be announced stoppages. Other information in the dataset such as station location, incident type, bound, and vehicle number were not discussed in this analysis. Data was cleaned using @citeR and packages @tidyverse, @dplyr, and @janitor. Data was analyzed with @ggplot2, @lubridate, @tidyverse, @dplyr, @patchwork, and @knitr.
-
-In @sec-2-1 and @sec-2-2 we explore the dataset variables before conducting further analysis in @sec-results.
+  The data was thoroughly cleaned to ensure accuracy and prepare it for analysis; the process is detailed in Appendix~\ref{sec:appendixA}. In @sec-2-1 and @sec-2-2 we explore the dataset variables before conducting further analysis in @sec-results.
 
 ## Overview of Data {#sec-2-1}
 
@@ -62,7 +60,7 @@ kable(head(streetcar_data),
 
 ## Delay by Year and Service Type  {#sec-2-2}
 
-The number of delay observations per year and for each service type are below. Note the low number of delays in 2024 is due to the data ending in August; analysis must account for this limitation. The vast majority of observations come from the regular streetcar service, which is intuitive since the regular service has the most lines (9 total) and runs the most regularly.
+The number of delay observations per year and for each service type are below. Note the low number of delays in 2024 is due to the data ending in August. The vast majority of observations come from the regular streetcar service, which is intuitive since the regular service has the most lines (9 total) and runs the most regularly.
 
 ```{r}
 #| label: fig-2
@@ -84,7 +82,7 @@ kable(delays_by_service_type,
 
 We can calculate summary statistics for the delay length, and then filter by year and service type:
 
-
+\newpage
 
 
 
@@ -136,7 +134,7 @@ kable(year_summary,
 
 ```
 
-The minimum delay of 3 minutes and maximum of 119 minutes are due to the constraints we placed when cleaning the data, as discussed in @sec-data. We can see that the median delay is twice as long for the night service compared to the two others. The median delay times over the 3 years are similar, although the mean delay rose by more than 3 minutes between 2022 and 2024.
+The minimum delay of 3 minutes and maximum of 119 minutes are due to the constraints we placed when cleaning the data, as discussed in Appendix~\ref{sec:appendixA}. We can see that the median delay is twice as long for the night service compared to the two others. The median delay times over the 3 years are similar, although the mean delay rose by more than 3 minutes between 2022 and 2024.
 
 Following the introduction of the variables, we can explore the results of our data analysis.
 
@@ -172,7 +170,7 @@ ggplot(avg_delay_data, aes(x = as.factor(line), y = avg_delay, fill = service_ty
   facet_grid(~ service_type, scales = "free_x", space = "free")
 ```
 
-Average delay times vary significantly across streetcar lines and service types. Regular service lines have relatively consistent delay times, with lines 503 and 505 experiencing slightly higher averages than others. Night service lines, particularly line 305, exhibit the highest average delays. Reduced service lines also show higher delay times compared to regular service lines. In @fig-avg2 we see if this has been the case for each year.
+Average delay times vary significantly across streetcar lines and service types. Regular service lines have relatively consistent delay times, with lines 503 and 505 experiencing slightly higher averages than others. Night service lines, particularly line 305, exhibit the highest average delays. Reduced service lines also show higher delay times compared to regular service lines. In @fig-avg2 we see if this is the case for each year.
 
 ```{r}
 #| label: fig-avg2
@@ -208,8 +206,7 @@ ggplot(avg_delay_by_year, aes(x = service_type, y = avg_delay, fill = year_servi
     legend.position = "right")
 ```
 
-
-Delay times have increased over the years across all service types, with the most significant increase seen in reduced service lines, particularly from 2022-2023. In years 2023 and 2024, both reduced and night services had a significantly higher average delay length. Having established a broad understanding, we now look at specific lines for each type individually, starting with regular service in @fig-avg3 and @fig-avg4.
+Delay times have increased over the years across all service types, with the most significant increase seen in reduced service lines, particularly from 2022-2023. In years 2023 and 2024, both reduced and night services had a significantly higher average delay length. We can now look at specific lines for each type individually, starting with regular service in @fig-avg3 and @fig-avg4.
 
 ```{r}
 #| label: fig-avg3
@@ -281,7 +278,7 @@ ggplot(avg_delay_with_overall, aes(x = month_year, y = avg_delay, colour = as.fa
 
 In @fig-avg4 we can examine each streetcar line's growth individually over time. Growth is not linear and many lines share similar patterns of delay increases and decreases, particularly during common periods. For instance, peaks and troughs in delays across several lines around mid-2023 suggest external factors impacting multiple lines simultaneously. 
 
-Most lines such as 504, 505, and 506 seem to follow similar trends and align with the overall average delay trend, dotted in black. Line 503's high peaks and variance stand out compared to the rest, suggesting that it has unique factors or circumstances influencing its delays. The 512, previously shown to be the only line with a decreasing average delay time over the years, appears to have had a temporary period of delay times under 10 minutes starting in late 2023, before reverting back to being near the average.
+Most lines align with the overall average delay trend, dotted in black. Line 503's high peaks and variance stand out compared to the rest, suggesting that it has unique factors or circumstances influencing its delays. The 512, previously shown to be the only line with a decreasing average delay time over the years, appears to have had a temporary period of delay times under 10 minutes starting in late 2023, before reverting back to being near the average.
 
 Similarly, @fig-avg5, @fig-avg6, and @fig-avg7 analyze reduced and night services over time.
 
@@ -342,10 +339,7 @@ night_plot <- ggplot(avg_delay_night, aes(x = as.factor(line), y = avg_delay, fi
 print(reduced_plot + night_plot + plot_layout(ncol = 2))
 ```
 
-We can now see that there are no observations of the reduced service 507 in 2022 as it was yet to be routed. Therefore, the increase in average delay time for the reduced lines can be attributed entirely to the 508. Similarly, the night service 305 was not routed until 2024, and has struggled, having by far the lengthiest average delays, although the sample size is likely smaller.
-
-
-
+We can now see that there are no observations of the reduced service 507 in 2022 as it was yet to be routed. Therefore, the increase in average delay time for the reduced lines can be attributed entirely to the 508. Similarly, the night service 305 was not routed until 2024, and has by far the lengthiest average delays.
 
 
 ```{r}
@@ -370,8 +364,8 @@ red_delay_with_overall <- red_delay_over_time %>%
   left_join(overall_red_delay, by = "month_year")
 
 ggplot(red_delay_with_overall, aes(x = month_year, y = avg_delay, colour = as.factor(line))) +
-  geom_line(size = 0.8, alpha = 0.8) +
-  geom_line(aes(y = overall_red_delay), linetype = "dashed", color = "black", size = 0.6) + 
+  geom_line(linewidth = 0.8, alpha = 0.8) +
+  geom_line(aes(y = overall_red_delay), linetype = "dashed", color = "black", linewidth = 0.6) + 
   labs(
     title = "Delay Time of Reduced Service Streetcar Lines",
     x = NULL, y = "Average Delay Time (mins)",
@@ -408,8 +402,8 @@ n_delay_with_overall <- n_delay_over_time %>%
   left_join(overall_n_delay, by = "month_year")
 
 ggplot(n_delay_with_overall, aes(x = month_year, y = avg_delay, colour = as.factor(line))) +
-  geom_line(size = 0.8, alpha = 0.8) +
-  geom_line(aes(y = overall_n_delay), linetype = "dashed", color = "black", size = 0.6) + 
+  geom_line(linewidth = 0.8, alpha = 0.8) +
+  geom_line(aes(y = overall_n_delay), linetype = "dashed", color = "black", linewidth = 0.6) + 
   labs(
     title = "Delay Time of Night Service Streetcar Lines",
     x = NULL, y = "Average Delay Time (mins)",
@@ -428,7 +422,7 @@ While analysis of the average delay time is useful and helps identify general tr
 
 ## Analysis of Delay Frequency
 
-Before we proceed with delay frequency, we have to deal with data limitations - particularly, missing values in 2024 from September onwards. One possible consideration would be to scale the 2024 data to account for a whole year's worth of observations. However, this is an unsafe estimate as it assumes delays are evenly distributed throughout the year, which is unlikely considering seasonal changes, unexpected occurrences, and planned events like construction. For best accuracy, when we directly compare between years, we will use data from January to August, which is present in all 3 years of the dataset. As we know from @sec-2-2, the total observations for each service type are very different, so we will look at each service type individually.
+Before we proceed with delay frequency, we have to deal with missing values in 2024 from September onwards, which we do in Appendix~\ref{sec:appendixB}. We do this by only using data from January to August when making year-by-year comparisons. Since the total observations for each service type are different, we will look at each service type individually.
 
 ```{r}
 #| label: fig-freq1
@@ -453,7 +447,7 @@ ggplot(delay_freq_regular1to8, aes(x = as.factor(line), y = delay_freq, fill = a
     legend.position = "right")
 ```
 
-@fig-freq1 shows the delay frequency by line from January to August of the 3 years. A major limitation of the dataset is the lack of service volume; a high delay frequency can mean either operational issues or a high service volume, so looking at the value of a frequency alone is not insightful. However, we can see an overall downward trend in delay frequency over the years, which indicates improvement, assuming overall streetcar services have been fairly consistent in the time period.
+@fig-freq1 shows the delay frequency by line from January to August of the 3 years. Since the dataset does not provide information on successful trips, a high delay frequency can either mean operational issues or a high service volume, so looking at the value of a frequency alone is not insightful. However, we can see an overall downward trend in delay frequency over the years.
 
 
 ```{r}
@@ -500,13 +494,13 @@ night_plot2 <- ggplot(delay_freq_night1to8, aes(x = as.factor(line), y = delay_f
 print(reduced_plot2 + night_plot2 + plot_layout(ncol = 2))
 ```
 
-As we know, reduced service has the smallest sample size; its bar graph in @fig-freq2 incomplete, which makes sense given that both lines have not been in service consistently over the 3 years. As we are unaware of service volume, not much insight is available. The night service graph has a bit more information, with overall delays decreasing significantly from 2022 to 2023 before increasing again in 2024. The tiny sample size for the 305 indicates that its high average delay in @fig-avg5 may not necessarily be an indicator of poor performance; more data is required to reach that conclusion.
+Not many conclusions can be drawn from the reduced service graph given the sample size. The night service graph has a bit more information, with overall delays decreasing significantly from 2022 to 2023 before increasing again in 2024. The tiny sample size for the 305 indicates that its high average delay in @fig-avg5 may not necessarily be an indicator of poor performance, but rather that more data is required.
 
-Up until now, we have mainly looked at patterns in streetcar performance over time, but there are also insights to be found in researching more specific time frames.
+Up until now, we have mainly looked at patterns in streetcar performance over time, but there are also elements to be found in researching more specific time frames.
 
 ## Specific Time Periods
 
-For further data exploration, we take the hour, month, and year from the `date` variable, and use the existing `day` variable to assign an ordinal variable `day_of_week`. Since the sample size for reduced and night service lines are much smaller than regular service lines, little information is gained from analyzing their specific time periods, so we will mainly look at regular service data.
+For further data exploration, we look at the hour, day of the week, month, and year. Details for acquiring this data are in Appendix~\ref{sec:appendixC}. Since the sample size for reduced and night service lines are much smaller than regular service lines, little information is gained from analyzing their specific time periods, so we will look at regular service data.
 
 ```{r}
 #| echo: false
@@ -561,8 +555,7 @@ ggplot(reg_time_data, aes(x = month, y = min_delay, fill = as.factor(year))) +
     plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
 ```
 
-The number of service delays seem to be lowest in the summer and highest in the winter, which suggests the weather may have a large affect on streetcar punctuality. The average delay time appears to be lowest at the start of the year and gradually increases as the year goes on. As previously noticed, the number of service delays are consistently lower year by year for all months, but the average delay time is consistently increasing across the same time period. 
-
+The number of service delays seem to be lowest in the summer and highest in the winter, which suggests the weather may have a large affect on streetcar punctuality. The average delay time appears to be lowest at the start of the year and gradually increases as the year goes on. 
 
 ```{r}
 #| label: fig-time3
@@ -600,7 +593,7 @@ ggplot(reg_time_data, aes(x = day_of_week, y = min_delay, fill = as.factor(year)
 
 ```
 
-In 2022, the number of service delays were lowest on Sunday and gradually increased as the week went along, but this trend has lessened; 2024 had roughly a uniform number of delays for each day of the week. The same is true for the average delay time, which seeems to have no correlation with the day of the week.
+In 2022, the number of service delays were lowest on Sunday and increased as the week went along, but this trend has disappeared; 2024 had roughly a uniform number of delays for each day of the week. The same is true for the average delay time, which seems to have no correlation with the day of the week.
 
 ```{r}
 #| label: fig-time5
@@ -650,7 +643,7 @@ ggplot(night_time_data, aes(x = as.factor(hour), fill = as.factor(year))) +
 
 ```
 
-The number of delays for the regular service dips between 4 and 10 am, but this seems to entirely be because of reduced service volume at those hours. The night service delay total confirms this, as the total peaks at the same time the regular service dips. The delay peak around 6-9pm for regular service coincides with a rush hour, but this peak lessens year on year from 2022 to 2024.
+The number of delays for the regular service dips between 4 and 10 am, but this seems to entirely be because of reduced service volume at those hours. The night service delay total corroborates this, as the total peaks at the same time the regular service dips. The delay peak around 6-9pm for regular service coincides with a rush hour, but this peak lessens year on year from 2022 to 2024.
 
 ```{r}
 #| label: fig-time7
@@ -673,38 +666,48 @@ ggplot(reg_time_data, aes(x = as.factor(hour), y = min_delay, fill = as.factor(y
   )
 ```
 
-The average delay time has a clear peak around 6 to 8 am, which is an unwelcome trend especially considering the aformentioned lack of service volume during those hours. Aside from this peak, delay time is uniform throughout.
+The average delay time has a clear peak around 6 to 8 am. Aside from this peak, delay time is uniform throughout.
 
 # Discussion {#sec-discussion}
 
-## First discussion point
+## Trend of Increasing Average Delay Lengths
 
-- general trend of average delay times increasing uniformly, without much correlation with certain other variables, among all 3 services. key area of improvement? or is this because of other reasons, like increased traffic ?
+  The analysis shows a general upward trend in average delay times each year across all service types and specific time intervals. This consistent increase could be the result of rowing traffic congestion or operational issues The exact reason for this increase is unclear; it could be from systemic issues within the streetcar network, infrastructure inefficiencies, or just a rise in population. Whatever the case, addressing these delays should be paramount; if there is no simple solution, there are ways to mitigate the problem, such as enhancing real-time communication with commuters through online platforms like Twitter or the TTCwatch app to manage expectations.
 
-## Second discussion point
+## Decreasing Frequency of Delays
 
-- general trend of delay frequency decreasing. unclear if positive because fewer delays, or negative because less streetcar servicing/construction.
- 
+  There is a general trend of the frequency of delays decreasing over the observed period. However, this decrease could be misleading. Since the dataset does not have total service volume, it is unclear if the reduced frequency of delays is due to operational improvements or reduced service levels. If fewer streetcars are operating due to maintenance, route cuts, or lack of demand, the lower frequency may not represent an actual improvement in streetcar reliability. Further analysis with complete service data would be helpful.
 
-## Third discussion point
 
-- general trend is that streetcar delay lengths and frequency seem to be independent of the month, day of week, or hour. what does this indicate ? there are no specific targeted "short-term" fixes available or city would have found them by now?
+## Independence of Delay Patterns from Specific Times
 
-## limitations and next steps
+  Delay lengths and frequencies appear to be mostly independent of the month, day of the week, or hour of the day, suggesting that there are no outlier areas where delays are a big issue, and any issue with delays cannot be stopped easily with targeted short-term fixes. This could mean that delays are driven by broader systemic factors; addressing these will require even more comprehensive research and long-term strategizing.
 
--Data does not include total trips, so it is difficult to determine if variance is due to delay variance or total trip amount variance.
--if data also had location it would be interesting to see relationships between streetcar line times.
--missing sept-dec2024 data would have given us more insight on autumn trends and year on year comparisons.
+# Limitations and Future Steps {#sec-limitations}
+
+- Lack of data on total trip count: The absence of data on the total number of streetcar trips for each line makes it challenging to determine whether variance in delay frequency is due to actual changes in delay patterns, or changes in the total volume of services. Future research should incorporate data on total streetcar trips to provide a more accurate context and allow for more robust conclusions about service reliability.
+
+- Missing future data: The absence of data from September to December 2024 limits the ability to fully assess seasonal trends, particularly during the autumn months, which may impact overall year-to-year comparisons. As time goes on, more detailed data will be available, increasing our understanding of delays and whether existing trends will continue to hold.
+
+- Lack of location data: Not having data on the specific locations of lines and stops limits the ability to explore spatial patterns and relationships between different streetcar lines, which would increase knowledge on the interactions between lines and service types. Collecting more detailed data, including line coordinates, intersections, and distances would provide a clearer picture of how delays are related.
 
 
 \newpage
 
 \appendix
 
-# Appendix {.unnumbered}
+# Appendix {-}
 
-# Additional data details
+\section{Data Cleaning}\label{sec:appendixA}
+This included constructing a variable to determine the type of service - regular, reduced, night - of each specific streetcar line, and filtering observations to only include streetcar lines currently in service @ttc. Additionally, delays under 2 minutes were removed and considered negligible, as were delays over 2 hours, as these were likely to be announced stoppages. Other information in the dataset such as station location, incident type, bound, and vehicle number were not discussed in this analysis. Data was cleaned using @citeR and packages @tidyverse, @dplyr, and @janitor. Data was analyzed with @ggplot2, @lubridate, @tidyverse, @dplyr, @patchwork, and @knitr.
 
-\newpage
+
+\section{Incomplete Data}\label{sec:appendixB}
+One possible consideration would be to scale the 2024 data to account for a whole year's worth of observations. However, this is an unsafe estimate as it assumes delays are evenly distributed throughout the year, which is unlikely considering seasonal changes, unexpected occurrences, and planned events like construction. For best accuracy, when we directly compare between years, we will use data from January to August, which is present in all 3 years of the dataset.
+
+\section{Time Data}\label{sec:appendixC}
+We get the year, month, and hour from the `date` variable, and use the existing `day` variable to assign an ordinal variable `day_of_week`.
 
 # References
+
+\newpage

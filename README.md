@@ -1,7 +1,7 @@
 # TTC Streetcar Delay Analysis
 
 ## Overview
-This paper analyzes TTC streetcar data from the City of Toronto's Open Data Catalogue. It looks at streetcar data between 2022 and 2024
+This paper analyzes TTC streetcar data from the City of Toronto's Open Data Catalogue. It researches streetcar data between 2022 and 2024
 to assess patterns in delay length and frequency.
 
 ## File Structure
@@ -13,7 +13,6 @@ The repo is structured as:
 -   `other` contains details about LLM chat interactions and sketches.
 -   `paper` contains the files used to generate the paper, including the Quarto document and reference bibliography file, as well as the PDF of the paper. 
 -   `scripts` contains the R scripts used to simulate, download and clean data.
-
 
 ## Statement on LLM usage
 

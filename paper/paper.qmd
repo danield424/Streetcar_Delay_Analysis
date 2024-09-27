@@ -8,261 +8,694 @@ abstract: "This paper analyzes TTC streetcar delay data to understand frequencie
 and lengths of delays. Conclusions... Discussion point..."
 format: pdf
 number-sections: true
-bibliography: references.bib #TODO
+bibliography: references.bib
 ---
 
 ```{r}
 #| include: false
 #| warning: false
 #| message: false
+#| echo: false
 
 library(tidyverse)
-library(ggpubr)
+library(knitr)
 library(dplyr)
 library(lubridate)
-library(gridExtra)
 library(patchwork)
-
-# You can and should cross-reference sections and sub-sections. We use @citeR and @rohan.
+library(ggplot2)
 ```
 
 # Introduction
 
-One of the most important areas of any city's infrastructure is its public transportation system. Streetcars, once a common mode of transport in North America, <https://www.britannica.com/technology/streetcar>, dwindled in usage as cities became increasingly car-centric. Today, Toronto is the only city that still uses streetcars, with the TTC (Toronto Transit Commission) currently operating 11 day lines and 4 night lines. However, the streetcar system's inefficiency and delay frequency hinder its effectiveness and increase overall traffic. An improvement in this area would go a long way towards increasing the accessibility and sustainability of Canada's largest city.
+Public transportation systems are vital components of urban infrastructure, providing essential services that connect people to their communities, reduce traffic congestion, and promote sustainability. Streetcars were once a common mode of transportation across North American cities, but have largely disappeared due to car-centric urban planning @britannica. Today, Toronto stands out as the only city on the continent still utilizing a streetcar network, with the Toronto Transit Commission (TTC) running 11 daytime and 5 nighttime lines. These streetcars are often criticized for being slow and unreliable, with frequent delays frustrating commuters while contributing to broader traffic congestion, undermining the positives of public transit @thestar. Addressing these inefficiencies could significantly improve accessibility, boost sustainability, and enhance the overall quality of life for in Canada’s largest city.
 
-The TTC streetcar system is relatively archaic and unreliable, which is a problem since 230,000 commuters rely on it daily <https://www.cp24.com/news/the-ttc-says-ridership-reached-a-post-pandemic-high-1.7041849> . Nearly every Torontonian has an anecdote about a lengthy streetcar delay inconveniencing them in a time of need, causing many to rely on alternative transit modes <https://www.thestar.com/opinion/contributors/queen-and-king-streetcars-show-toronto-why-the-subway-is-the-better-way-it-works/article_c8a54ecc-6d68-54f2-84fd-ccd5c41dd4ed.html>. Assessing the total impact and effect caused by streetcar delays should help give us a better idea of where and when its efficiencies are most pronounced.
+Despite the central role of the streetcar, which serves approximately 230,000 daily commuters, there is a lack of comprehensive analysis quantifying the impact of streetcar delays on transit efficiency @cp24. This paper explores the frequency, duration, and patterns of these disruptions and aims to provide empirical insights. Understanding where, when, and why these delays occur is crucial to identifying the areas most in need of improvement and optimizing this key component of Toronto’s public transportation system.
 
-This paper examines streetcar delay data to determine the extent of streetcar delay issues. In @sec-data, we analyze public streetcar delay data from 2023 to look for trends and observations within delays. In @Discussion, we discuss our findings and their real-world relevance.
+This paper aims to fill this gap by analyzing public streetcar delay data from 2022 to 2024 to assess the scope and impact of delays within the TTC network. The study examines delay patterns by time of day, day of the week, and month, comparing average delay times across different service lines and types. Key findings reveal significant variability in delay times, with certain lines and time periods showing pronounced inefficiencies. The results highlight critical areas for improvement, providing actionable insights for transit authorities. This analysis underscores the importance of data-driven strategies to enhance streetcar performance and supports broader efforts to improve urban mobility in Toronto.
+
+The paper is structured as follows: @sec-data introduces the data and methodology used; @sec-results presents the key findings; and @sec-discussion discusses the real-world implications of these results.
 
 # Data {#sec-data}
 
-Our data is sourced from the @opendatatoronto R package, which provides a spreadsheet of all streetcar delays in 2023. Data was cleaned using @citeR and packages @tidyverse, @dplyr, @lubridate, and @janitor. Data is analyzed with @ggplot2, @ggpubr, @gridExtra and @knitr. We filtered relevant variables for our analysis, which include day of week, date and time, the line number, line type, and delay time for each observation. We also removed extreme outlier delays, which were likely to be pre-planned and made clear to commuters ahead of time. In total, the cleaned data has 12396 observations.
+To investigate streetcar delays, delay logs from 2022, 2023, and 2024 (up until September) is sourced from the @opendatatoronto R package, which provides data from the City of Toronto Open Data Catalogue. These datasets, intended to monitor and improve public transit performance, are regularly updated and were current as of September 1, 2024. Although similar datasets exist, this specific dataset was chosen due to its official nature, reliability, and size.
 
-In @2.1 we explore the basics of the data before further analysis.
+The data includes the date and time, line number, and delay length of over 40,000 instances of streetcar delays since 2022. It is unclear how the data was gathered; reliability is ensured as it comes directly from the TTC, but it is possible there were missed or incorrect measurements due to limitations. Delay times are measured in minutes, and time is measured to the second.
 
-## 2.1 Exploring Data {#2.1}
+The data was thoroughly cleaned to ensure accuracy and prepare it for analysis. This included constructing a variable to determine the type of service - regular, reduced, night - of each specific streetcar line, and filtering observations to only include streetcar lines currently in service @ttc. Additionally, delays under 2 minutes were removed and considered negligible, as were delays over 2 hours, as these were likely to be announced stoppages. Other information in the dataset such as station location, incident type, bound, and vehicle number were not discussed in this analysis. Data was cleaned using @citeR and packages @tidyverse, @dplyr, and @janitor. Data was analyzed with @ggplot2, @lubridate, @tidyverse, @dplyr, @patchwork, and @knitr.
 
-Here is a sample of the data:
+In @sec-2-1 and @sec-2-2 we explore the dataset variables before conducting further analysis in @sec-results.
+
+## Overview of Data {#sec-2-1}
+
+@fig-1 provides a sample of 6 data observations. In total, there are 36701 observations of 5 variables: `day` contains the day of the week, `date` contains the timestamp of the delay, `service_type` was constructed and assigns the service type of the line in `line`. `min_delay` is the delay time in minutes; this is the main variable of interest. We will analyze `min_delay` in relation to the 4 other variables. There are no additional relationships between the variables aside from the obvious `day` - `date` and aforementioned `service_type` construction.
 
 ```{r}
-#| label: table-1
-#| fig-cap: 2023 Streetcar Delays
+#| label: fig-1
+#| fig-cap: Summary of Streetcar Delay Data 2022-2024
 #| echo: false
 
-cleaned_data <- read.csv("../data/analysis_data/delaydata.csv")
+# Read data and display a summary with head().
+streetcar_data <- read_csv("../data/analysis_data/delaydata.csv", show_col_types = FALSE)
+kable(head(streetcar_data), 
+  format = "pipe")
+```
 
-table_plot <- ggtexttable(
-  head(cleaned_data, 15),
-  rows = NULL,             # Option to display row numbers
-  theme = ttheme("mBlue")  # Optional theme for styling
+## Delay by Year and Service Type  {#sec-2-2}
+
+The number of delay observations per year and for each service type are below. Note the low number of delays in 2024 is due to the data ending in August; analysis must account for this limitation. The vast majority of observations come from the regular streetcar service, which is intuitive since the regular service has the most lines (9 total) and runs the most regularly.
+
+```{r}
+#| label: fig-2
+#| echo: false
+# Table with number of delay observations by year.
+delays_by_year <- streetcar_data %>%
+  mutate(year = year(date)) %>% 
+  count(year)                   
+kable(delays_by_year, 
+  caption = "Number of Delay Observations by Year")
+
+# Table with the number of delay observations by service type
+delays_by_service_type <- streetcar_data %>%
+  count(service_type)
+kable(delays_by_service_type, 
+  caption = "Number of Delay Observations by Service Type")
+```
+
+
+We can calculate summary statistics for the delay length, and then filter by year and service type:
+
+
+
+
+
+```{r}
+#| label: fig-3
+#| echo: false
+#| results: asis
+
+# Extract summary statistics
+min_delay_summary <- summary(streetcar_data$min_delay)
+min_delay_table <- data.frame(
+  Statistic = c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max."),
+  Value = as.numeric(min_delay_summary[c(1, 2, 3, 4, 5, 6)]))
+
+# Display the formatted summary table
+kable(min_delay_table,
+  booktabs = TRUE,
 )
-table_plot
+
+# Summary by Service Type
+service_type_summary <- streetcar_data %>%
+  group_by(service_type) %>%
+  summarize(
+    mean_delay = round(mean(min_delay), 1),
+    median_delay = median(min_delay),
+    sd_delay = round(sd(min_delay), 1),
+    minimum_delay = min(min_delay),
+    maximum_delay = max(min_delay)
+  )
+
+kable(service_type_summary,
+      booktabs = TRUE,
+  caption = "Min. Delay Summary by Service Type")
+
+
+year_summary <- streetcar_data %>%
+  group_by(year = year(date)) %>%
+  summarize(
+    mean_delay = round(mean(min_delay), 1),
+    median_delay = median(min_delay),
+    sd_delay = round(sd(min_delay), 1),
+    minimum_delay = min(min_delay),
+    maximum_delay = max(min_delay)
+  )
+
+kable(year_summary,
+      booktabs = TRUE,
+  caption = "Min Delay Summary by Year")
+
 ```
 
-To provide a bit more insight we can look into the summary statistics of delay times, and filter for type of service, line, and date. For example, we can see from @table-2 that average delay times are higher for the night service lines, and on Saturday compared to most other days of the week. Of course, this is very surface level and we analyze the data further in @2.2.
+The minimum delay of 3 minutes and maximum of 119 minutes are due to the constraints we placed when cleaning the data, as discussed in @sec-data. We can see that the median delay is twice as long for the night service compared to the two others. The median delay times over the 3 years are similar, although the mean delay rose by more than 3 minutes between 2022 and 2024.
+
+Following the introduction of the variables, we can explore the results of our data analysis.
+
+# Results {#sec-results}
+
+## Analysis of Average Delay Time
+
+One of the key factors of interest is the average delay time for different variable values, such as streetcar lines, types, and dates. Examining average delays allows us to identify patterns and areas where delays are most pronounced. This highlights specific points of inefficiency and potential targets for improvement. In @fig-avg1 we begin by looking at the average delay time for each line.
 
 ```{r}
-#| label: table-2
-#| fig-cap: 2023 Streetcar Delays Summary
+#| label: fig-avg1
+#| fig-cap: Average delay time for streetcar lines, sorted by service type.
 #| echo: false
-
-print("Minutes Delay Summary Statistics")
-cleaned_data$min_delay %>% summary()
-
-print("Min Delay Summary Statistics (Night Service Lines)")
-regular_data <- cleaned_data %>% filter(service_type == 'Night')
-regular_data$min_delay %>% summary()
-print("Min Delay Summary Statistics (Saturday)")
-data506 <- cleaned_data %>% filter(day == "Saturday")
-data506$min_delay %>% summary()
-print("Min Delay Summary Statistics (Jan-Mar 2023)")
-date_data <- cleaned_data %>% filter(date <= as.Date("2023-04-01"))
-summary(date_data$min_delay)
-```
-
-## 2.2 Analysing Data {#2.2}
-
-```{r}
-#| label: 2.2.1
-#| fig-cap: average delay
-#| echo: false
-#| warning: false
-#| message: false
 
 # Calculate the average delay for each line 
-avg_delay_data <- cleaned_data %>%
+avg_delay_data <- streetcar_data %>%
   group_by(line, service_type) %>%
   summarize(avg_delay = mean(min_delay), .groups = 'drop')
 
-# Reorder service_type to ensure "Regular" is first and "Night" is last
+# Reorder service_type to put "Regular" first and "Night" last
 avg_delay_data$service_type <- factor(avg_delay_data$service_type, levels = c("Regular", "Reduced", "Night"))
 
-# Bar graph
+# Bar graph it
 ggplot(avg_delay_data, aes(x = as.factor(line), y = avg_delay, fill = service_type)) +
   geom_bar(stat = "identity") +
-  labs(
-    title = "Average Delay Time for Streetcar Lines in 2023",
-    x = "Streetcar Line",
-    y = "Average Delay Time (mins)",
-  ) +
-  scale_fill_manual(values = c("Regular" = "red3", "Reduced" = "tomato", "Night" = "blue")) +
+  labs(title = "Average Delay Time for Streetcar Lines",
+    x = "Streetcar Line", y = "Average Delay Time (mins)") +
+  scale_fill_manual(values = c("Regular" = "red3", "Reduced" = "tomato", "Night" = "blue4")) +
   theme(
     plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
         strip.text = element_text(size = 10, face = "bold"),
-        legend.position = "none",
-  ) +
+        legend.position = "none") +
   facet_grid(~ service_type, scales = "free_x", space = "free")
-
 ```
 
+Average delay times vary significantly across streetcar lines and service types. Regular service lines have relatively consistent delay times, with lines 503 and 505 experiencing slightly higher averages than others. Night service lines, particularly line 305, exhibit the highest average delays. Reduced service lines also show higher delay times compared to regular service lines. In @fig-avg2 we see if this has been the case for each year.
+
 ```{r}
-#| label: 2.2.2
-#| fig-cap: delay frequency
+#| label: fig-avg2
+#| fig-cap: Average delay time for streetcars by service type, per year.
 #| echo: false
-#| warning: false
-#| message: false
 
-# Calculate the frequency of delays for each line and type
-delay_freq_data <- cleaned_data %>%
-  group_by(line, service_type) %>%
-  summarize(delay_freq = n(), .groups = 'drop')
-#todo: see if i can make this a function
-# Filter data for each service type 
-regular_data <- delay_freq_data %>% filter(service_type == "Regular")
-reduced_data <- delay_freq_data %>% filter(service_type == "Reduced")
-night_data <- delay_freq_data %>% filter(service_type == "Night")
+# Calculate the average delay for each service type and year
+avg_delay_by_year <- streetcar_data %>%
+  mutate(year = year(date)) %>%  
+  group_by(service_type, year) %>%
+  summarize(avg_delay = mean(min_delay), .groups = 'drop')
 
-# Create individual bar graphs for each service type
-plot1 <- ggplot(regular_data, aes(x = as.factor(line), y = delay_freq, fill = service_type)) +
-  geom_bar(stat = "identity", fill = "red3", width = 0.9) +
+# Reorder service_type to put "Regular" first and "Night" last
+avg_delay_by_year$service_type <- factor(avg_delay_by_year$service_type, levels = c("Regular", "Reduced", "Night"))
+# Create a new variable that combines year and service type for unique colours
+avg_delay_by_year$year_service <- interaction(avg_delay_by_year$year, avg_delay_by_year$service_type)
+
+ggplot(avg_delay_by_year, aes(x = service_type, y = avg_delay, fill = year_service)) +
+  geom_bar(stat = "identity", position = "dodge") +
   labs(
-    title = "Regular Service Delay Frequency",
-    x = "Streetcar Line",
-    y = "Number of Delays"
-  ) +
+    title = "Average Delay Time by Service Type and Year",
+    x = NULL, y = "Average Delay Time (mins)") +
+  scale_fill_manual(
+    values = c(
+      "2022.Regular" = "red1", "2022.Reduced" = "tomato1", "2022.Night" = "steelblue2",
+      "2023.Regular" = "red3", "2023.Reduced" = "tomato3", "2023.Night" = "steelblue3",
+      "2024.Regular" = "red4", "2024.Reduced" = "tomato4", "2024.Night" = "blue4"
+    ),  
+    name = NULL) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, size = 13, face = "bold")
-  )
-
-plot2 <- ggplot(reduced_data, aes(x = as.factor(line), y = delay_freq, fill = service_type)) +
-  geom_bar(stat = "identity", fill = "tomato", width = 0.4) +
-  labs(
-    title = "Reduced Service Delay Frequency",
-    x = "Streetcar Line",
-    y = "Number of Delays"
-  ) +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(hjust = 0.5, size = 10, face = "bold")
-  )
-
-plot3 <- ggplot(night_data, aes(x = as.factor(line), y = delay_freq, fill = service_type)) +
-  geom_bar(stat = "identity", fill = "blue", width = 0.8) +
-  labs(
-    title = "Night Service Delay Frequency",
-    x = "Streetcar Line",
-    y = "Number of Delays"
-  ) +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(hjust = 0.5, size = 10, face = "bold")
-  )
-# Adjust widths to make plot1 bigger
-print(plot1 + (plot2 / plot3) + plot_layout(ncol = 2, widths = c(1.8, 1)))
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    legend.position = "right")
 ```
 
-From @2.2.1 and @2.2.2, we can see the average delay time is greater for the reduced and night services compared to the regular. From the regular streetcars, the streetcar line with the highest average delay time is the 505, although there is very little variance between all 11 lines. There is a much greater variance in the delay frequency - the 501 and 301 (which run on the same line) have a much higher delay frequency than the rest of the lines.
+
+Delay times have increased over the years across all service types, with the most significant increase seen in reduced service lines, particularly from 2022-2023. In years 2023 and 2024, both reduced and night services had a significantly higher average delay length. Having established a broad understanding, we now look at specific lines for each type individually, starting with regular service in @fig-avg3 and @fig-avg4.
 
 ```{r}
-# Extract hour and day of the week
-cleaned_data <- cleaned_data %>%
-  mutate(hour = hour(date),  # Extract the hour from datetime
-    day_of_week = wday(date, label = TRUE)  # Extract the day of the week as a label
-  )
+#| label: fig-avg3
+#| fig-cap: Average delay time for regular service streetcars, per year.
+#| echo: false
+ 
+# Filter data for regular service, and calculate the average delay for each line and year
+regular_data <- streetcar_data %>%
+  filter(service_type == "Regular") %>%
+  mutate(year = year(date)) %>% 
+  group_by(line, year)
 
-regular_data <- cleaned_data %>% filter(service_type == "Regular")
-reduced_data <- cleaned_data %>% filter(service_type == "Reduced")
-night_data <- cleaned_data %>% filter(service_type == "Night")
+avg_delay_regular <- regular_data %>% summarize(avg_delay = mean(min_delay), .groups = 'drop')
 
-# Function to create plots for day of week
-create_delay_plot <- function(data, colour) {
-  plot_day <- ggplot(data, aes(x = day_of_week, fill = service_type)) +
-    geom_bar(fill = colour) +
-    labs(title = "Delays by Day of Week",
-      x = "Day of Week",
-      y = "# of Delays"
-    ) +
-    theme(plot.title = element_text(hjust = 0.5, size = 11, face = "bold"),
-      axis.text.x = element_text(angle = 45, hjust = 1))
-}
-
-# Create plots for each service type
-regular_plot <- create_delay_plot(regular_data, "red3")
-reduced_plot <- create_delay_plot(reduced_data, "tomato")
-night_plot <- create_delay_plot(night_data, "blue")
-
-grid.arrange(
-  regular_plot,
-  reduced_plot,
-  night_plot,
-  ncol = 3
-)
+# Bar graph with 3 bars for each line per year.
+ggplot(avg_delay_regular, aes(x = as.factor(line), y = avg_delay, fill = as.factor(year))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Average Delay for Regular Service Lines by Year",
+    x = "Streetcar Line", y = "Average Delay Time (mins)") +
+  scale_fill_manual(
+    values = c("2022" = "red1", "2023" = "red3", "2024" = "red4"),
+    name = NULL) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    legend.position = "right")
 ```
 
-From \@ the graphs, we can see that delays are most common on Wednesday among all 3 streetcar services.
+Across almost all regular lines, average delay times have increased over time, indicating a worsening in service reliability. Line 503 and 511 are the regular lines with the most concerning delay time and upward trend, while 512 is the only line with a downward trend.
 
 ```{r}
-regular_plot_hour <- ggplot(regular_data, aes(x = as.factor(hour), fill = service_type)) +
-  scale_x_discrete(drop = FALSE, limits = as.character(0:23)) + 
-  geom_bar(fill = "red3", width=0.95) +
-  labs(title = "Delays by Hour",
-    x = NULL,
-    y = "# of Delays"
-  ) +
-  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-        )
-reduced_plot_hour <- ggplot(reduced_data, aes(x = as.factor(hour), fill = service_type)) +
-  scale_x_discrete(drop = FALSE, limits = as.character(0:23)) + 
-  geom_bar(fill = "tomato", width=0.95) +
-  labs(title = NULL,
-    x = NULL,
-    y = "# of Delays"
-  ) 
-night_plot_hour <- ggplot(night_data, aes(x = as.factor(hour), fill = service_type)) +
-  scale_x_discrete(drop = FALSE, limits = as.character(0:23)) + 
-  geom_bar(fill = "blue", width=0.95) +
-  labs(title = NULL,
-    x = "Hour",
-    y = "# of Delays"
-  )
+#| label: fig-avg4
+#| fig-cap: Average delay time for regular service streetcars over time.
+#| echo: false
 
-grid.arrange(regular_plot_hour, reduced_plot_hour, night_plot_hour, ncol = 1)
+# Get the month_year to plot as x-axis, and calculate average delay over time
+reg_delay_over_time <- regular_data %>%
+  mutate(month_year = as.Date(format(date, "%Y-%m-01"))) %>%
+  mutate(month_year = case_when(month_year == as.Date("2024-09-01") ~ as.Date("2024-08-01"),
+      TRUE ~ month_year)
+  ) %>%
+  group_by(line, month_year) %>%
+  summarize(avg_delay = mean(min_delay), .groups = 'drop')
+
+# Calculate the overall average delay for each month-year across all lines
+overall_reg_delay <- reg_delay_over_time %>%
+  group_by(month_year) %>%
+  summarize(overall_reg_delay = mean(avg_delay))
+
+# Merge overall average with the filtered data
+avg_delay_with_overall <- reg_delay_over_time %>%
+  left_join(overall_reg_delay, by = "month_year")
+
+# Line graph showing average delay over time for each regular streetcar line
+ggplot(avg_delay_with_overall, aes(x = month_year, y = avg_delay, colour = as.factor(line))) +
+  geom_line(linewidth = 0.6, alpha = 0.6) +
+  geom_line(aes(y = overall_reg_delay), linetype = "dashed", color = "black", linewidth = 0.8) +  # Overall average delay line
+  labs(
+    title = "Delay Time of Regular Service Streetcar Lines",
+    x = NULL, y = "Average Delay Time (mins)",
+    colour = "Streetcar Line") +
+  scale_x_date(limits = c(as.Date("2022-01-01"), as.Date("2024-09-01")),
+               breaks = seq(as.Date("2022-01-01"), as.Date("2024-09-01"), by = "3 months"),
+              labels = c("Jan '22", "", "Jul '22", "", "Jan '23", "", "Jul '23", "", "Jan '24", "", "Jul '24")) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
 ```
 
-From \@ the graph, we can see that the regular streetcar service has delays around 3-4 pm, although the distribution of delays is fairly uniform (with the exception of early morning hours when there is less service).
+In @fig-avg4 we can examine each streetcar line's growth individually over time. Growth is not linear and many lines share similar patterns of delay increases and decreases, particularly during common periods. For instance, peaks and troughs in delays across several lines around mid-2023 suggest external factors impacting multiple lines simultaneously. 
 
-# Discussion
+Most lines such as 504, 505, and 506 seem to follow similar trends and align with the overall average delay trend, dotted in black. Line 503's high peaks and variance stand out compared to the rest, suggesting that it has unique factors or circumstances influencing its delays. The 512, previously shown to be the only line with a decreasing average delay time over the years, appears to have had a temporary period of delay times under 10 minutes starting in late 2023, before reverting back to being near the average.
+
+Similarly, @fig-avg5, @fig-avg6, and @fig-avg7 analyze reduced and night services over time.
+
+```{r}
+#| label: fig-avg5
+#| fig-cap: Average delay time for reduced and night service streetcars, per year.
+#| echo: false
+
+# Same process as above code chunk
+# Reduced
+reduced_data <- streetcar_data %>%
+  filter(service_type == "Reduced") %>%
+  mutate(year = year(date)) %>% 
+  group_by(line, year)
+
+avg_delay_reduced <- reduced_data %>%
+  summarize(avg_delay = mean(min_delay), .groups = 'drop') %>%
+  # Ensure all combinations of line and year are present
+  complete(line = c(507, 508), year = c(2022, 2023, 2024), fill = list(avg_delay = 0))
+
+
+reduced_plot <- ggplot(avg_delay_reduced, aes(x = as.factor(line), y = avg_delay, fill = as.factor(year))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Reduced Service Avg. Delay",
+    x = NULL, y = "Average Delay Time (mins)") +
+  scale_fill_manual(
+    values = c("2022" = "tomato1", "2023" = "tomato3", "2024" = "tomato4"),
+    name = NULL) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 10, face = "bold"),
+    legend.position = "right")
+
+# Night
+night_data <- streetcar_data %>%
+  filter(service_type == "Night") %>%
+  mutate(year = year(date)) %>% 
+  group_by(line, year)
+
+avg_delay_night <- night_data %>%
+  summarize(avg_delay = mean(min_delay), .groups = 'drop') %>%
+  # Ensure all combinations of line and year are present
+  complete(line = c(301, 304, 305, 306, 310), year = c(2022, 2023, 2024), fill = list(avg_delay = 0))
+
+
+night_plot <- ggplot(avg_delay_night, aes(x = as.factor(line), y = avg_delay, fill = as.factor(year))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Night Service Avg. Delay",
+    x = NULL, y = NULL) +
+  scale_fill_manual(
+    values = c("2022" = "steelblue2", "2023" = "steelblue3", "2024" = "blue4"),
+    name = NULL) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 10, face = "bold"),
+    legend.position = "right")
+
+print(reduced_plot + night_plot + plot_layout(ncol = 2))
+```
+
+We can now see that there are no observations of the reduced service 507 in 2022 as it was yet to be routed. Therefore, the increase in average delay time for the reduced lines can be attributed entirely to the 508. Similarly, the night service 305 was not routed until 2024, and has struggled, having by far the lengthiest average delays, although the sample size is likely smaller.
+
+
+
+
+
+```{r}
+#| label: fig-avg6
+#| fig-cap: Average delay time for reduced service streetcars over time.
+#| echo: false
+
+# Same as avg-delay-4
+red_delay_over_time <- reduced_data %>%
+  mutate(month_year = as.Date(format(date, "%Y-%m-01"))) %>%
+  mutate(month_year = case_when(month_year == as.Date("2024-09-01") ~ as.Date("2024-08-01"),
+      TRUE ~ month_year)
+  ) %>%
+  group_by(line, month_year) %>%
+  summarize(avg_delay = mean(min_delay), .groups = 'drop')
+
+overall_red_delay <- red_delay_over_time %>%
+  group_by(month_year) %>%
+  summarize(overall_red_delay = mean(avg_delay))
+
+red_delay_with_overall <- red_delay_over_time %>%
+  left_join(overall_red_delay, by = "month_year")
+
+ggplot(red_delay_with_overall, aes(x = month_year, y = avg_delay, colour = as.factor(line))) +
+  geom_line(size = 0.8, alpha = 0.8) +
+  geom_line(aes(y = overall_red_delay), linetype = "dashed", color = "black", size = 0.6) + 
+  labs(
+    title = "Delay Time of Reduced Service Streetcar Lines",
+    x = NULL, y = "Average Delay Time (mins)",
+    colour = "Streetcar Line") +
+  scale_x_date(limits = c(as.Date("2022-01-01"), as.Date("2024-09-01")),
+               breaks = seq(as.Date("2022-01-01"), as.Date("2024-09-01"), by = "3 months"),
+              labels = c("Jan '22", "", "Jul '22", "", "Jan '23", "", "Jul '23", "", "Jan '24", "", "Jul '24")) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+```
+
+Since the 507 line was in service, the average delay time for the two reduced lines follow similar trends, indicating a correlation between the two. Both peaked late in 2023 and have decreased since.
+
+```{r}
+#| label: fig-avg7
+#| fig-cap: Average delay time for night service streetcars over time.
+#| echo: false
+
+# Same as avg-delay-4
+n_delay_over_time <- night_data %>%
+  mutate(month_year = as.Date(format(date, "%Y-%m-01"))) %>%
+  mutate(month_year = case_when(month_year == as.Date("2024-09-01") ~ as.Date("2024-08-01"),
+      TRUE ~ month_year)
+  ) %>%
+  group_by(line, month_year) %>%
+  summarize(avg_delay = mean(min_delay), .groups = 'drop')
+
+overall_n_delay <- n_delay_over_time %>%
+  group_by(month_year) %>%
+  summarize(overall_n_delay = mean(avg_delay))
+
+n_delay_with_overall <- n_delay_over_time %>%
+  left_join(overall_n_delay, by = "month_year")
+
+ggplot(n_delay_with_overall, aes(x = month_year, y = avg_delay, colour = as.factor(line))) +
+  geom_line(size = 0.8, alpha = 0.8) +
+  geom_line(aes(y = overall_n_delay), linetype = "dashed", color = "black", size = 0.6) + 
+  labs(
+    title = "Delay Time of Night Service Streetcar Lines",
+    x = NULL, y = "Average Delay Time (mins)",
+    colour = "Streetcar Line") +
+  scale_x_date(limits = c(as.Date("2022-01-01"), as.Date("2024-09-01")),
+               breaks = seq(as.Date("2022-01-01"), as.Date("2024-09-01"), by = "3 months"),
+              labels = c("Jan '22", "", "Jul '22", "", "Jan '23", "", "Jul '23", "", "Jan '24", "", "Jul '24")) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+```
+
+There does not appear to be much of a correlation between night service lines, with most of them appearing to peak randomly. The overall average delay time is often skewed by lengthy delays of over 40 minutes. The average delay time has plenty of variance for each line, except the 301 which appears fairly consistent. 
+
+While analysis of the average delay time is useful and helps identify general trends and areas of growth, looking at the frequency of delays gives us a clearer picture of trends and line efficiency.
+
+## Analysis of Delay Frequency
+
+Before we proceed with delay frequency, we have to deal with data limitations - particularly, missing values in 2024 from September onwards. One possible consideration would be to scale the 2024 data to account for a whole year's worth of observations. However, this is an unsafe estimate as it assumes delays are evenly distributed throughout the year, which is unlikely considering seasonal changes, unexpected occurrences, and planned events like construction. For best accuracy, when we directly compare between years, we will use data from January to August, which is present in all 3 years of the dataset. As we know from @sec-2-2, the total observations for each service type are very different, so we will look at each service type individually.
+
+```{r}
+#| label: fig-freq1
+#| fig-cap: Total delays in January-August for regular service lines by year.
+#| echo: false
+
+# Keep only January to August
+delay_freq_regular1to8 <- regular_data %>%
+  filter(month(date) %in% 1:8) %>% summarize(delay_freq = n(), .groups = 'drop')
+
+# Calculate the average delay frequency for each line and year within the filtered period
+ggplot(delay_freq_regular1to8, aes(x = as.factor(line), y = delay_freq, fill = as.factor(year))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Delay Frequency for Regular Service Lines (Jan-Aug)",
+    x = NULL, y = "Total Delays") +
+  scale_fill_manual(
+    values = c("2022" = "red1", "2023" = "red3", "2024" = "red4"),
+    name = NULL) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+    legend.position = "right")
+```
+
+@fig-freq1 shows the delay frequency by line from January to August of the 3 years. A major limitation of the dataset is the lack of service volume; a high delay frequency can mean either operational issues or a high service volume, so looking at the value of a frequency alone is not insightful. However, we can see an overall downward trend in delay frequency over the years, which indicates improvement, assuming overall streetcar services have been fairly consistent in the time period.
+
+
+```{r}
+#| label: fig-freq2
+#| fig-cap: Total delays in January-August for reduced and night service lines by year.
+#| echo: false
+
+# Same code as above
+# Reduced
+delay_freq_reduced1to8 <- reduced_data %>%
+  filter(month(date) %in% 1:8) %>% summarize(delay_freq = n(), .groups = 'drop') %>% 
+  # Ensure all combinations of line and year are present
+  complete(line = c(507, 508), year = c(2022, 2023, 2024), fill = list(delay_freq = 0))
+
+reduced_plot2 <- ggplot(delay_freq_reduced1to8, aes(x = as.factor(line), y = delay_freq, fill = as.factor(year))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Reduced Service Delays (Jan-Aug)",
+    x = NULL, y = "Total Delays") +
+  scale_fill_manual(
+    values = c("2022" = "tomato1", "2023" = "tomato3", "2024" = "tomato4"),
+    name = NULL) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 10, face = "bold"),
+    legend.position = "right")
+
+# Night
+delay_freq_night1to8 <- night_data %>%
+  filter(month(date) %in% 1:8) %>% summarize(delay_freq = n(), .groups = 'drop') %>% 
+  complete(line = c(301, 304, 305, 306, 310), year = c(2022, 2023, 2024), fill = list(delay_freq = 0))
+
+night_plot2 <- ggplot(delay_freq_night1to8, aes(x = as.factor(line), y = delay_freq, fill = as.factor(year))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Night Service Delays (Jan-Aug)",
+    x = NULL, y = NULL) +
+  scale_fill_manual(
+    values = c("2022" = "steelblue2", "2023" = "steelblue3", "2024" = "blue4"),
+    name = NULL) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 10, face = "bold"),
+    legend.position = "right")
+
+print(reduced_plot2 + night_plot2 + plot_layout(ncol = 2))
+```
+
+As we know, reduced service has the smallest sample size; its bar graph in @fig-freq2 incomplete, which makes sense given that both lines have not been in service consistently over the 3 years. As we are unaware of service volume, not much insight is available. The night service graph has a bit more information, with overall delays decreasing significantly from 2022 to 2023 before increasing again in 2024. The tiny sample size for the 305 indicates that its high average delay in @fig-avg5 may not necessarily be an indicator of poor performance; more data is required to reach that conclusion.
+
+Up until now, we have mainly looked at patterns in streetcar performance over time, but there are also insights to be found in researching more specific time frames.
+
+## Specific Time Periods
+
+For further data exploration, we take the hour, month, and year from the `date` variable, and use the existing `day` variable to assign an ordinal variable `day_of_week`. Since the sample size for reduced and night service lines are much smaller than regular service lines, little information is gained from analyzing their specific time periods, so we will mainly look at regular service data.
+
+```{r}
+#| echo: false
+# Extract hour, day of the week, month for regular streetcar rides.
+reg_time_data <- streetcar_data %>% filter(service_type == "Regular") %>%
+  mutate(hour = hour(date), 
+    day_of_week = wday(date, label = TRUE),
+    month = factor(format(date, "%b"), levels = month.abb),
+    year = year(date))
+reg_time_data <- reg_time_data %>% filter(!(reg_time_data$month == 'Sep' & reg_time_data$year == 2024))
+```
+
+@fig-time1 and @fig-time2 visualize the average delay time and delay frequency for each month.
+@fig-time3 and @fig-time4 explore the same for each day of the week.
+@fig-time5, @fig-time6, and @fig-time7 analyze the hourly breakdown.
+
+```{r}
+#| label: fig-time1
+#| fig-cap: Total number of regular service delays by month.
+#| echo: false
+
+ggplot(reg_time_data, aes(x = as.factor(month), fill = as.factor(year))) +
+    geom_bar() +
+    labs(
+      title = "Regular Service Delays by Month",
+      x = NULL, y = "# of Delays",
+      fill = NULL) +
+    scale_fill_manual(values = c("2022" = "red1", "2023" = "red3", "2024" = "red4")) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+
+```
+
+```{r}
+#| label: fig-time2
+#| fig-cap: Average length of regular service delays by month.
+#| echo: false
+
+# Plot average delay time by month
+ggplot(reg_time_data, aes(x = month, y = min_delay, fill = as.factor(year))) +
+  stat_summary(fun = "mean", geom = "bar", position = "dodge") +
+  labs(
+    title = "Average Delay Time for Regular Service by Month",
+    x = NULL, 
+    y = "Average Delay Time (Minutes)",
+    fill = NULL
+  ) +
+  scale_fill_manual(values = c("2022" = "red1", "2023" = "red3", "2024" = "red4")) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+```
+
+The number of service delays seem to be lowest in the summer and highest in the winter, which suggests the weather may have a large affect on streetcar punctuality. The average delay time appears to be lowest at the start of the year and gradually increases as the year goes on. As previously noticed, the number of service delays are consistently lower year by year for all months, but the average delay time is consistently increasing across the same time period. 
+
+
+```{r}
+#| label: fig-time3
+#| fig-cap: Total number of service delays by day of week.
+#| echo: false
+
+# Plot for day of week
+ggplot(reg_time_data, aes(x = day_of_week, fill = as.factor(year))) +
+    geom_bar() +
+    labs(title = "Regular Service Delays by Day of Week",
+      x = NULL, y = "# of Delays",
+      fill = NULL) +
+    scale_fill_manual(values = c("2022" = "red1", "2023" = "red3", "2024" = "red4")) +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+```
+
+```{r}
+#| label: fig-time4
+#| fig-cap: Average length of regular service delays by day of week.
+#| echo: false
+
+ggplot(reg_time_data, aes(x = day_of_week, y = min_delay, fill = as.factor(year))) +
+  stat_summary(fun = "mean", geom = "bar", position = "dodge") +
+  labs(
+    title = "Average Delay Time for Regular Service by Day of Week",
+    x = "Day of Week", 
+    y = "Average Delay Time (Minutes)",
+    fill = "Year"
+  ) +
+  scale_fill_manual(values = c("2022" = "red1", "2023" = "red3", "2024" = "red4")) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+
+```
+
+In 2022, the number of service delays were lowest on Sunday and gradually increased as the week went along, but this trend has lessened; 2024 had roughly a uniform number of delays for each day of the week. The same is true for the average delay time, which seeems to have no correlation with the day of the week.
+
+```{r}
+#| label: fig-time5
+#| fig-cap: Total number of regular service delays by hour of the day.
+#| echo: false
+
+# Plot for hour of the day
+ggplot(reg_time_data, aes(x = as.factor(hour), fill = as.factor(year))) +
+    geom_bar() +
+    labs(
+      title = "Regular Service Delays by Hour of the Day",
+      x = "Hour of Day", y = "# of Delays",
+      fill = NULL) +
+    scale_fill_manual(values = c("2022" = "red1", "2023" = "red3", "2024" = "red4")) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+
+```
+
+
+```{r}
+#| label: fig-time6
+#| fig-cap: Total number of night service delays by hour of the day.
+#| echo: false
+
+night_time_data <- streetcar_data %>% filter(service_type == "Night") %>%
+  mutate(hour = hour(date), 
+    day_of_week = wday(date, label = TRUE),
+    month = factor(format(date, "%b"), levels = month.abb),
+    year = year(date)) 
+
+night_time_data <- night_time_data %>% filter(!(night_time_data$month == 'Sep' 
+                                                & night_time_data$year == 2024)) %>% complete(hour = 0:23, 
+                                                                                              fill = list(count = 0))
+ggplot(night_time_data, aes(x = as.factor(hour), fill = as.factor(year))) +
+    geom_bar() +
+    labs(
+      title = "Night Service Delays by Hour of the Day",
+      x = "Hour of Day", y = "# of Delays",
+      fill = NULL) +
+    scale_fill_manual(values = c("2022" = "steelblue2", "2023" = "steelblue3", "2024" = "blue4")) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"), 
+      legend.position = "none")
+
+```
+
+The number of delays for the regular service dips between 4 and 10 am, but this seems to entirely be because of reduced service volume at those hours. The night service delay total confirms this, as the total peaks at the same time the regular service dips. The delay peak around 6-9pm for regular service coincides with a rush hour, but this peak lessens year on year from 2022 to 2024.
+
+```{r}
+#| label: fig-time7
+#| fig-cap: Average length of regular service delays by hour.
+#| echo: false
+
+ggplot(reg_time_data, aes(x = as.factor(hour), y = min_delay, fill = as.factor(year))) +
+  stat_summary(fun = "mean", geom = "bar", position = "dodge") +
+  labs(
+    title = "Average Delay Time for Regular Service by Hour",
+    x = "Hour of Day", 
+    y = "Average Delay Time (Minutes)",
+    fill = "Year"
+  ) +
+  scale_fill_manual(values = c("2022" = "red1", "2023" = "red3", "2024" = "red4")) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    axis.text.x = element_text(angle = 0, hjust = 0.5)
+  )
+```
+
+The average delay time has a clear peak around 6 to 8 am, which is an unwelcome trend especially considering the aformentioned lack of service volume during those hours. Aside from this peak, delay time is uniform throughout.
+
+# Discussion {#sec-discussion}
 
 ## First discussion point
 
-Looking at the average delay lengths, it is somewhat surprising that night service streetcars experience significant delays compared to the regular service, as one would expect less traffic to result in smoother operations. Possible reasons for this include a drop in operational support for drivers during night hours, as there are fewer staff available to manage and respond to issues and maintenance activities. Additionally, overnight road maintenance is often scheduled during these hours and may affect night service. Coupled with the reduced frequency of night service, the lengthy delays appear to be an area of concern, as passengers already have fewer options and longer wait times during the times when night service is operating. This pattern highlights the need for targeted strategies to address delays during night operations.
+- general trend of average delay times increasing uniformly, without much correlation with certain other variables, among all 3 services. key area of improvement? or is this because of other reasons, like increased traffic ?
 
 ## Second discussion point
 
-Looking at the delay frequency by line, the frequency of delays along the 501 and 301 that operate along Queen St are by far the highest compared to their counterparts. While it is possible that its operations were less efficient due to rerouting, https://www.thestar.com/news/gta/queen-streetcar-is-about-to-be-rerouted-for-more-than-four-years-here-s-where/article_d61f5cf0-1380-50cb-b73d-33283035943e.html this does not fully account for the sheer amount of delays. This shows the need either for increased service in this area, or better scheduling and planning to increase commuter's confidence in the 501 and 301 arrival time.
-
-todo: get comparison from 2024 data.
+- general trend of delay frequency decreasing. unclear if positive because fewer delays, or negative because less streetcar servicing/construction.
+ 
 
 ## Third discussion point
 
-Regular streetcar delays are most common around 3-4pm, which is outside of peak hours. The data seems to indicate that delays are less frequent before noon, which is a positive sign.
+- general trend is that streetcar delay lengths and frequency seem to be independent of the month, day of week, or hour. what does this indicate ? there are no specific targeted "short-term" fixes available or city would have found them by now?
 
-## Weaknesses and next steps
+## limitations and next steps
 
-Data does not include total trips, so it is difficult to determine if variance is due to delay variance or total trip amount variance.
+-Data does not include total trips, so it is difficult to determine if variance is due to delay variance or total trip amount variance.
+-if data also had location it would be interesting to see relationships between streetcar line times.
+-missing sept-dec2024 data would have given us more insight on autumn trends and year on year comparisons.
 
-Weaknesses and next steps should also be included.
 
 \newpage
 

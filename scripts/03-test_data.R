@@ -10,7 +10,6 @@
 
 #### Workspace setup ####
 library(tidyverse)
-# [...UPDATE THIS...]
 
 #### Test data ####
 # Checks if Streetcar line numbers are valid

@@ -5,6 +5,7 @@ author:
   - Daniel Du
 thanks: "Code and data are available at https://github.com/danield424/TTC-Streetcar-Delays"
 date: September 24, 2024
+date-format: long
 abstract: "This paper analyzes delay data from Toronto's TTC streetcar system between 2022 and 2024 to assess patterns in delay frequency and length. The study found that while the frequency of delays has decreased, the average delay length has increased, with delays showing no consistent patterns based on month, day of the week, or hour. Understanding streetcar delay trends helps determine methods of improving public transportation in Toronto."
 format: pdf
 number-sections: true
@@ -26,9 +27,9 @@ library(ggplot2)
 
 # Introduction
 
-Public transportation systems are vital components of urban infrastructure, providing an essential service that connects people to their communities, reduces traffic congestion, and promotes sustainability. Streetcars were once a common mode of transportation across North American cities, but have largely disappeared due to car-centric urban planning @britannica. Today, Toronto stands alone as the continent's only major city still utilizing a streetcar network, with the Toronto Transit Commission (TTC) running 11 daytime and 5 nighttime lines. These are often criticized for being slow and unreliable, with frequent delays frustrating commuters while contributing to broader congestion, undermining the positives of public transit @thestar. Addressing these inefficiencies could significantly improve accessibility, sustainability, and the overall quality of life in Canada’s largest city.
+Public transportation systems are vital components of urban infrastructure, providing an essential service that connects people to their communities, reduces traffic congestion, and promotes sustainability. Streetcars were once a common mode of transportation across North American cities, but have largely disappeared due to car-centric urban planning [@britannica]. Today, Toronto stands alone as the continent's only major city still utilizing a streetcar network, with the Toronto Transit Commission (TTC) running 11 daytime and 5 nighttime lines. These are often criticized for being slow and unreliable, with frequent delays frustrating commuters while contributing to broader congestion, undermining the positives of public transit [@thestar]. Addressing these inefficiencies could significantly improve accessibility, sustainability, and the overall quality of life in Canada’s largest city.
 
-Despite the central role of the streetcar, which serves approximately 230,000 daily commuters, there is a lack of comprehensive analysis quantifying the impact of streetcar delays on transit efficiency @cp24. This paper explores the frequency, duration, and patterns of these disruptions and aims to highlight patterns. Understanding where, when, and why these delays occur is central to identifying the areas most in need of improvement and optimizing this key component of Toronto’s public transportation system.
+Despite the central role of the streetcar, which serves approximately 230,000 daily commuters, there is a lack of comprehensive analysis quantifying the impact of streetcar delays on transit efficiency [@cp24]. This paper explores the frequency, duration, and patterns of these disruptions and aims to highlight patterns. Understanding where, when, and why these delays occur is central to identifying the areas most in need of improvement and optimizing this key component of Toronto’s public transportation system.
 
 This study analyzes public streetcar delay data from 2022 to 2024 to assess the extent and impact of delays in Toronto's streetcar network. After examining delay patterns across different years, months, days, and hours, and comparing average delay lengths and frequencies across various service lines, the analysis reveals a uniform increase in average delay times, despite a reduction in delay frequency. These findings highlight systemic inefficiencies in the streetcar network, showing the need for further research and investment to improve transit performance. The findings from this study support movements to enhance the efficiency and reliability of Toronto’s public transportation system.
 
@@ -36,11 +37,11 @@ This study analyzes public streetcar delay data from 2022 to 2024 to assess the 
 
 # Data {#sec-data}
 
-  To investigate streetcar delays, delay logs from 2022, 2023, and 2024 (up until September) is sourced from the Opendatatoronto R package, which provides data from the City of Toronto Open Data Catalogue @opendatatoronto. These datasets, intended to monitor and improve public transit performance, are regularly updated and were current as of September 1, 2024. Although similar datasets exist, this specific dataset was chosen due to its official nature, reliability, and size.
+  To investigate streetcar delays, delay logs from 2022, 2023, and 2024 (up until September) is sourced from the Opendatatoronto R package, which provides data from the City of Toronto Open Data Catalogue [@opendatatoronto]. These datasets, intended to monitor and improve public transit performance, are regularly updated and were current as of September 1, 2024. Although similar datasets exist, this specific dataset was chosen due to its official nature, reliability, and size.
 
   The data includes the date and time, line number, and delay length of over 40,000 instances of streetcar delays since 2022. It is unclear how the data was gathered; reliability is ensured as it comes directly from the TTC, but it is possible there were missed or incorrect measurements due to limitations. Delay times are measured in minutes, and time is measured to the second.
 
-  The data was thoroughly cleaned to ensure accuracy and prepare it for analysis; the process is detailed in Appendix~\ref{sec:appendixA}. In @sec-2-1 and @sec-2-2 we explore the dataset variables before conducting further analysis in @sec-results.
+  The data was thoroughly cleaned to ensure accuracy and prepare it for analysis; the process is detailed in @sec-appendix-a. In @sec-2-1 and @sec-2-2 we explore the dataset variables before conducting further analysis in @sec-results.
 
 ## Overview of Data {#sec-2-1}
 
@@ -150,7 +151,7 @@ kable(year_summary,
 ```
 
 
-The minimum delay of 3 minutes and maximum of 119 minutes are due to constraints placed when cleaning the data, as discussed in Appendix~\ref{sec:appendixA}. The median delay is twice as long for the night service compared to the two others. The median delay times over the 3 years are similar, although the yearly mean delay rose by more than 3 minutes between 2022 and 2024.
+The minimum delay of 3 minutes and maximum of 119 minutes are due to constraints placed when cleaning the data, as discussed in @sec-appendix-a. The median delay is twice as long for the night service compared to the two others. The median delay times over the 3 years are similar, although the yearly mean delay rose by more than 3 minutes between 2022 and 2024.
 
 Following the introduction of the variables, we can explore the results of our data analysis.
 
@@ -450,7 +451,7 @@ While analysis of the average delay is useful and identifies general trends, loo
 \newpage
 ## Analysis of Delay Frequency
 
-Before we proceed with delay frequency, we have to deal with missing values in 2024 from September onwards, which we do in Appendix~\ref{sec:appendixB}. We accomplish this by only using data from January to August when making year-by-year comparisons. Since the total observations for each service type are different, we will look at each service type individually.
+Before we proceed with delay frequency, we have to deal with missing values in 2024 from September onwards, which we do in @sec-appendix-b. We accomplish this by only using data from January to August when making year-by-year comparisons. Since the total observations for each service type are different, we will look at each service type individually.
 
 ```{r}
 #| label: fig-freq1
@@ -528,7 +529,7 @@ Up until now, we have mainly looked at patterns in streetcar performance over ti
 
 ## Specific Time Periods
 
-For further data exploration, we look at the hour, day of the week, month, and year. Details for acquiring this data are in Appendix~\ref{sec:appendixC}. Since the sample size for reduced and night service lines are much smaller than regular service lines, little information is gained from analyzing their specific time periods, so we will look at regular service data.
+For further data exploration, we look at the hour, day of the week, month, and year. Details for acquiring this data are in @sec-appendix-c. Since the sample size for reduced and night service lines are much smaller than regular service lines, little information is gained from analyzing their specific time periods, so we will look at regular service data.
 
 ```{r}
 #| echo: false
@@ -736,15 +737,15 @@ The average delay time has a clear peak around 6 to 8 am. Aside from this peak, 
 
 \appendix
 
-# Appendix {-}
+# Appendix {.unnumbered}
 
-\section{Data Cleaning}\label{sec:appendixA}
-This included constructing a variable to determine the type of service - regular, reduced, night - of each specific streetcar line, and filtering observations to only include streetcar lines currently in service @ttc. Additionally, delays under 2 minutes were removed and considered negligible, as were delays over 2 hours, as these were likely to be announced stoppages. Other information in the dataset such as station location, incident type, bound, and vehicle number were not discussed in this analysis. Data was cleaned using @citeR and packages @tidyverse, @dplyr, and @janitor. Data was analyzed with @ggplot2, @lubridate, @tidyverse, @dplyr, @patchwork, and @knitr.
+# Data Cleaning {#sec-appendix-a}
+This included constructing a variable to determine the type of service - regular, reduced, night - of each specific streetcar line, and filtering observations to only include streetcar lines currently in service according to the Toronto Transit Commission [@ttc]. Additionally, delays under 2 minutes were removed and considered negligible, as were delays over 2 hours, as these were likely to be announced stoppages. Other information in the dataset such as station location, incident type, bound, and vehicle number were not discussed in this analysis. Data was cleaned using R [@citeR] and packages tidyverse [@tidyverse] and janitor [@janitor]. Data was analyzed with lubridate [@lubridate], tidyverse [@tidyverse], patchwork [@patchwork], and knitr [@knitr].
 
-\section{Incomplete Data}\label{sec:appendixB}
+# Incomplete Data {#sec-appendix-b}
 One possible consideration would be to scale the 2024 data to account for a whole year's worth of observations. However, this is an unsafe estimate as it assumes delays are evenly distributed throughout the year, which is unlikely considering seasonal changes, unexpected occurrences, and planned events like construction. For best accuracy, when we directly compare between years, we will use data from January to August, which is present in all 3 years of the dataset.
 
-\section{Time Data}\label{sec:appendixC}
+# Time Data {#sec-appendix-c}
 We get the year, month, and hour from the `date` variable, and use the existing `day` variable to assign an ordinal variable `day_of_week`.
 
 \newpage
